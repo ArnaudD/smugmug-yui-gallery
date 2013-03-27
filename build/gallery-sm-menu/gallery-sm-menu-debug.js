@@ -401,6 +401,41 @@ var Menu = Y.Base.create('menu', Y.Menu.Base, [Y.View], {
     },
 
     /**
+    Check if the node is outside the viewport.
+
+    If needed, the node will be resied and the "overflow-y:scroll" css property will be added.
+
+    @method reposition
+    @param {Boolean} moveAllowed Can we move the node vertically (default: true)
+    @param {Array}   region      Region the node must fit in
+    */
+    constrain: function (moveAllowed) {
+        var container       = this.get('container'),
+            menuNode        = container.one('ul'),
+            menuHeight      = menuNode.get('region').height,
+            viewportPadding = this.get('viewportPadding'),
+            viewportHeight  = Y.DOM.viewportRegion().height - (2 * viewportPadding);
+
+        moveAllowed = typeof moveAllowed === 'undefined' ? true : moveAllowed;
+
+        console.log(menuHeight, viewportHeight);
+
+        if (viewportHeight >= menuHeight) {
+            menuNode.setStyles({height: '', overflowY: ''}); // revert original style
+            return;
+        }
+
+        if (moveAllowed) {
+            container.setY(viewportPadding);
+            menuNode.setStyles({height: viewportHeight, overflowY: 'scroll'});
+        }
+        else {
+            // TODO compute new height
+            menuNode.setStyles({height: viewportHeight, overflowY: 'scroll'});
+        }
+    },
+
+    /**
     Repositions this menu so that it is anchored to a specified node, region, or
     set of pixel coordinates.
 
@@ -438,6 +473,10 @@ var Menu = Y.Base.create('menu', Y.Menu.Base, [Y.View], {
         )[0].region;
 
         container.setXY([menuRegion.left, menuRegion.top]);
+
+        // If the menu is a context menu, we can move it. Otherwise it should
+        // stay where it is.
+        this.constrain(this.get('showOnContext'));
 
         return this;
     },
@@ -733,6 +772,8 @@ var Menu = Y.Base.create('menu', Y.Menu.Base, [Y.View], {
         // Position the submenu.
         var anchorRegion = anchors[0].region;
         childrenNode.setXY([anchorRegion.left, anchorRegion.top]);
+
+        this.constrain();
     },
 
     // -- Protected Event Handlers ---------------------------------------------
@@ -1255,6 +1296,15 @@ var Menu = Y.Base.create('menu', Y.Menu.Base, [Y.View], {
         **/
         visible: {
             value: false
+        },
+
+        /**
+        
+
+        @attribute {Integer} viewportPadding
+        **/
+        viewportPadding: {
+            value: 20
         }
     }
 });
@@ -1270,6 +1320,7 @@ Y.Menu = Y.mix(Menu, Y.Menu);
         "gallery-sm-menu-base",
         "gallery-sm-menu-templates",
         "node-screen",
+        "node-style",
         "view"
     ],
     "skinnable": true
